@@ -1,0 +1,56 @@
+name: Integracion Frontend API
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  frontend-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Obtener codigo
+        uses: actions/checkout@v4
+      - name: Construir imagen Docker
+        run: docker build -t riesgo-crediticio-e2e:ci .
+      - name: Iniciar contenedor
+        run: docker run -d --name riesgo-crediticio-e2e -p 8080:8080 riesgo-crediticio-e2e:ci
+      - name: Esperar API lista
+        shell: bash
+        run: |
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8080/health | grep -q '"status":"ok"'; then
+              echo 'API lista'
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs riesgo-crediticio-e2e
+          exit 1
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar Playwright y Chromium
+        run: |
+          python -m pip install playwright==1.58.0
+          python -m playwright install --with-deps chromium
+      - name: Probar formulario y API
+        run: python tests/test_frontend_playwright.py
+      - name: Guardar logs de contenedor
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidencias_frontend
+          docker logs riesgo-crediticio-e2e > evidencias_frontend/docker_logs.txt 2>&1 || true
+          docker ps -a > evidencias_frontend/contenedores.txt || true
+      - name: Publicar evidencias descargables
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-integracion-frontend-api
+          path: evidencias_frontend/
+          if-no-files-found: warn
+      - name: Detener contenedor
+        if: always()
+        run: docker rm -f riesgo-crediticio-e2e || true

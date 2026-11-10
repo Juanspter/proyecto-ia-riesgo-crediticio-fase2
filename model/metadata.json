@@ -1,0 +1,20 @@
+{
+  "origen": "datos sinteticos generados con make_classification",
+  "features": [
+    "feature_01",
+    "feature_02",
+    "feature_03",
+    "feature_04",
+    "feature_05",
+    "feature_06",
+    "feature_07",
+    "feature_08",
+    "feature_09",
+    "feature_10",
+    "feature_11",
+    "feature_12"
+  ],
+  "umbral_demo": 0.5,
+  "auc_test": 0.9517,
+  "advertencia": "No apto para decisiones crediticias reales. Variables sin significado economico."
+}

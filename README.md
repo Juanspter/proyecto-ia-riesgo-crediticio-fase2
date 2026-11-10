@@ -1,11 +1,11 @@
-# Prediccion de incumplimiento crediticio - demo academica
+# Predicción de incumplimiento crediticio - demo académica para FII
 
-Proyecto de continuidad de la evaluacion de modelos. Datos **sinteticos**, 12 variables abstractas, sin interpretacion financiera. No usar en decisiones bancarias.
+Proyecto de continuidad de la evaluación de modelos. Datos **sintéticos**, 12 variables abstractas, sin interpretación financiera. No se debe usar en decisiones bancarias al ser una demo.
 
 ## Arquitectura
 Navegador (HTML/JS) -> `POST /predict` (FastAPI) -> RandomForest entrenado offline -> JSON.
 
-## Ejecucion local sin Docker
+## Ejecución local sin Docker
 ```bash
 python -m venv .venv
 # Activar entorno: Windows .venv\Scripts\activate | Linux/macOS source .venv/bin/activate
@@ -14,7 +14,7 @@ python -m model.train
 python -m pytest -q
 uvicorn app.main:app --host 127.0.0.1 --port 8080
 ```
-Abrir http://localhost:8080 y documentacion http://localhost:8080/docs
+Abrir http://localhost:8080 y documentación http://localhost:8080/docs
 
 ## Docker
 ```bash
@@ -37,19 +37,19 @@ En PowerShell puede usarse `Invoke-RestMethod` o Swagger `/docs`.
 - `GET /docs` Swagger UI
 
 ## Reproducibilidad y limitaciones
-La receta de datos sinteticos replica `make_classification` y Random Forest del ejercicio previo. El umbral 0.5 es **demostrativo** y NO representa necesariamente el umbral optimizado en el reporte anterior. No se reutiliza un artefacto entrenado previamente: el Dockerfile lo vuelve a entrenar durante la construccion. No hay autenticacion, monitoreo ni controles de gobierno de modelo aptos para produccion.
+La receta de datos sintéticos replica `make_classification` y Random Forest del ejercicio previo (credit default prediction). El umbral 0.5 es **demostrativo** y NO representa necesariamente el umbral optimizado en el reporte anterior. No se reutiliza un artefacto entrenado previamente: el Dockerfile lo vuelve a entrenar durante la construcción. No hay autenticación, monitoreo ni controles de gobierno de modelo aptos para producción.
 
 ## Evidencias
-Guardar capturas de `docker build`, `docker ps`, pagina principal, Swagger, `/health`, respuesta de `/predict`, `pytest` y errores 422. No afirmar que Docker o nube se validaron si no se ejecutaron.
+Se deben guardar capturas de `docker build`, `docker ps`, pagina principal, Swagger, `/health`, respuesta de `/predict`, `pytest` y errores 422. No es posible afirmar que Docker o nube se validaron ya que no se ejecutaron.
 
 ## Nube
-Ver `Manual_despliegue_nube.docx` y `Documento_validacion_pruebas.docx` incluidos en el paquete de entrega.
+Se debe ver `Manual_despliegue_nube.docx` y `Documento_validacion_pruebas.docx` incluidos en el paquete de entrega.
 
 ## Entrega fase II y rubrica
-La lista de evidencias que debes capturar esta en `evidencias/GUIA_EVIDENCIAS.md`.
-Se incluye GitHub Actions en `.github/workflows/tests.yml` para ejecutar pruebas en cada push.
+La lista de evidencias a capturar esta en `evidencias/GUIA_EVIDENCIAS.md`.
+Para esta demo académica se incluye GitHub Actions en `.github/workflows/tests.yml` para ejecutar pruebas en cada push.
 
-### Publicacion en GitHub (despues de verificar que no hay secretos ni datos personales)
+### Publicacion en GitHub (se sugiere verificar que no hay secretos ni datos personales)
 ```bash
 git init
 git add .
@@ -58,4 +58,4 @@ git branch -M main
 git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
 git push -u origin main
 ```
-Primero crea un repositorio vacio en GitHub; reemplaza los marcadores por tu usuario y nombre real del repositorio. No se ha publicado automaticamente.
+

@@ -1,0 +1,81 @@
+name: Validacion Docker
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  docker-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Obtener codigo
+        uses: actions/checkout@v4
+
+      - name: Construir imagen Docker
+        run: docker build --progress=plain -t riesgo-crediticio-demo:ci .
+
+      - name: Iniciar contenedor
+        run: docker run -d --name riesgo-crediticio-ci -p 8080:8080 riesgo-crediticio-demo:ci
+
+      - name: Esperar API y probar endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8080/health | grep -q '"status":"ok"'; then
+              break
+            fi
+            if [ "$i" -eq 45 ]; then
+              echo 'La API no inicio correctamente'
+              docker logs riesgo-crediticio-ci
+              exit 1
+            fi
+            sleep 2
+          done
+          curl --fail --show-error --silent http://127.0.0.1:8080/ > /tmp/frontend.html
+          grep -q 'Consultar prediccion' /tmp/frontend.html
+          curl --fail --show-error --silent http://127.0.0.1:8080/docs > /tmp/docs.html
+          grep -q 'swagger-ui' /tmp/docs.html
+          curl --fail --show-error --silent http://127.0.0.1:8080/model-info > /tmp/model-info.json
+          curl --fail --show-error --silent -H 'Content-Type: application/json' \
+            -d '{"features":[0,0,0,0,0,0,0,0,0,0,0,0]}' \
+            http://127.0.0.1:8080/predict > /tmp/prediction.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/prediction.json'))
+          assert 0 <= data['probabilidad_incumplimiento'] <= 1
+          assert data['clasificacion'] in (0,1)
+          print('Prediccion valida:', data)
+          PY
+          status=$(curl --silent --output /tmp/invalid.json --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' -d '{"features":[1,2,3]}' \
+            http://127.0.0.1:8080/predict)
+          test "$status" = 422
+          echo 'API, frontend, documentacion, prediccion y validacion: OK'
+
+      - name: Guardar evidencias del contenedor
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidencias-docker
+          docker ps -a > evidencias-docker/contenedores.txt 2>&1 || true
+          docker images > evidencias-docker/imagenes.txt 2>&1 || true
+          docker logs riesgo-crediticio-ci > evidencias-docker/logs.txt 2>&1 || true
+          for f in frontend.html docs.html model-info.json prediction.json invalid.json; do
+            if [ -f "/tmp/$f" ]; then cp "/tmp/$f" evidencias-docker/; fi
+          done
+          printf 'Commit: %s\nEjecucion: %s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > evidencias-docker/identificacion.txt
+
+      - name: Publicar evidencias descargables
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-docker-${{ github.run_number }}
+          path: evidencias-docker/
+          retention-days: 30
+
+      - name: Detener contenedor
+        if: always()
+        run: docker rm -f riesgo-crediticio-ci || true
